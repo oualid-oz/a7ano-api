@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(python)",
+      "Exec(find app)",
+      "Exec(.venv/bin/python)",
+      "Exec(find)",
+      "Exec(source)",
+      "Exec(chmod)",
+      "Exec(mkdir)",
+      "Exec(touch)",
+      "Exec(python3)",
+      "Exec(ls)",
+      "Exec(true)",
+      "Exec(pip3 install)",
+      "Exec(uv)"
+    ]
+  }
+}
