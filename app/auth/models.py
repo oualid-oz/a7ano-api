@@ -12,7 +12,7 @@ class RefreshSession(BaseModel):
     __tablename__ = "refresh_sessions"
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    token_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True, unique=True)
+    token_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True, unique=True)
     device_fingerprint: Mapped[str | None] = mapped_column(String(255), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)

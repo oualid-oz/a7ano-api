@@ -1,4 +1,14 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
+
+
+class SuccessResponse[T](BaseModel):
+    success: bool = True
+    message: str = "OK"
+    code: str = "OK"
+    data: T | None = None
+    meta: dict[str, Any] | None = None
 
 
 class PaginationParams(BaseModel):

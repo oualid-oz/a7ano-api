@@ -13,7 +13,8 @@
       "Exec(ls)",
       "Exec(true)",
       "Exec(pip3 install)",
-      "Exec(uv)"
+      "Exec(uv)",
+      "Exec(docker build)"
     ]
   }
 }

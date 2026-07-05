@@ -20,14 +20,12 @@ async_session_maker = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    async with async_session_maker() as session:
-        try:
+    session = async_session_maker()
+    try:
+        async with session.begin():
             yield session
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+    finally:
+        await session.close()
 
 
 async def close_db() -> None:

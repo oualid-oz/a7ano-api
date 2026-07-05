@@ -23,13 +23,14 @@ from app.auth.schemas import (
 )
 from app.auth.service import AuthService
 from app.common.responses import success_response
+from app.common.schemas import SuccessResponse
 from app.users.models import User
 from app.users.schemas import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=SuccessResponse[UserResponse], status_code=status.HTTP_201_CREATED)
 async def register(
     data: RegisterRequest,
     device_info: DeviceInfo = Depends(get_device_info),
@@ -42,7 +43,7 @@ async def register(
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=SuccessResponse[TokenResponse])
 async def login(
     data: LoginRequest,
     device_info: DeviceInfo = Depends(get_device_info),
@@ -52,7 +53,7 @@ async def login(
     return success_response(data=tokens)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=SuccessResponse[TokenResponse])
 async def refresh(
     data: RefreshRequest,
     device_info: DeviceInfo = Depends(get_device_info),
