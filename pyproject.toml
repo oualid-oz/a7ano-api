@@ -130,4 +130,4 @@ exclude_lines = [
 ]
 
 [tool.vercel]
-entrypoint = "api/index:app"
+entrypoint = "api.index:app"
