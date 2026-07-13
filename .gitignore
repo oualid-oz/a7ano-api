@@ -43,6 +43,7 @@ ENV/
 
 # Logs
 *.log
+logs/
 
 # Coverage
 .coverage

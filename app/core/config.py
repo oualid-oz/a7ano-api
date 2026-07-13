@@ -35,6 +35,18 @@ class Settings(BaseSettings):
 
     vault_master_key: str | None = None
 
+    mail_provider: str = "mailpit"
+    mail_from: str = "noreply@localhost"
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_tls: bool = False
+    resend_api_key: str | None = None
+    resend_from: str | None = None
+
+    app_url: str = "http://localhost:3000"
+
     max_login_attempts: int = 5
     login_lockout_minutes: int = 30
     rate_limit_requests: int = 60

@@ -4,10 +4,16 @@ from secrets import token_urlsafe
 from uuid import UUID, uuid4
 
 from app.common.schemas import PaginationMeta, PaginationParams
+from app.core.config import settings
+from app.core.email import get_email_client
+from app.core.templates import render_organization_invitation
 from app.organizations.exceptions import (
+    CannotChangeOwnerRoleException,
+    CannotRemoveOwnerException,
     InvitationAlreadyProcessedException,
     InvitationExpiredException,
     InvitationNotFoundException,
+    MemberNotFoundException,
     OrganizationNotFoundException,
     OrganizationSlugExistsException,
 )
@@ -96,9 +102,9 @@ class OrganizationService:
         return await self._organization_repository.delete_soft(organization)
 
     async def list_organizations(
-        self, pagination: PaginationParams
+        self, pagination: PaginationParams, current_user: User
     ) -> tuple[list[Organization], PaginationMeta]:
-        return await self._organization_repository.list(pagination)
+        return await self._organization_repository.list_for_user(current_user.id, pagination)
 
     async def invite(
         self,
@@ -119,7 +125,20 @@ class OrganizationService:
             created_by=current_user.id,
             updated_by=current_user.id,
         )
-        return await self._invitation_repository.create(invitation)
+        invitation = await self._invitation_repository.create(invitation)
+
+        link = f"{settings.app_url}/organizations/invitations/accept?token={token}"
+        subject = f"You have been invited to join {organization.name}"
+        body = render_organization_invitation(
+            inviter_name=current_user.full_name or current_user.email,
+            organization_name=organization.name,
+            role_name=role.name,
+            link=link,
+        )
+        client = get_email_client()
+        await client.send(invitation.email, subject, body)
+
+        return invitation
 
     async def accept_invitation(self, data: InvitationAccept, current_user: User) -> Organization:
         invitation = await self._invitation_repository.get_by_token(data.token)
@@ -186,6 +205,59 @@ class OrganizationService:
     async def list_invitations(self, org_id: UUID) -> list[OrganizationInvitation]:
         await self.get(org_id)
         return await self._invitation_repository.list_by_organization(org_id)
+
+    async def update_member_role(
+        self, org_id: UUID, user_id: UUID, role_id: UUID, current_user: User
+    ) -> MemberResponse:
+        organization = await self.get(org_id)
+        if organization.owner_id == user_id:
+            raise CannotChangeOwnerRoleException()
+
+        user = await self._user_repository.get(user_id)
+        if user is None or user.deleted_at is not None:
+            raise MemberNotFoundException()
+
+        role = await self._role_repository.get_or_404(role_id)
+
+        assignments = await self._user_role_repository.list_by_user_and_organization(
+            user_id, org_id
+        )
+        if not assignments:
+            raise MemberNotFoundException()
+
+        for assignment in assignments:
+            if assignment.team_id is None:
+                await self._user_role_repository.delete_hard(assignment)
+
+        membership = UserRole(
+            user_id=user_id,
+            role_id=role_id,
+            organization_id=org_id,
+            team_id=None,
+        )
+        await self._user_role_repository.create(membership)
+
+        return MemberResponse(
+            user_id=user.id,
+            full_name=user.full_name,
+            email=user.email,
+            role_id=role.id,
+            role_name=role.name,
+        )
+
+    async def remove_member(self, org_id: UUID, user_id: UUID, current_user: User) -> None:
+        organization = await self.get(org_id)
+        if organization.owner_id == user_id:
+            raise CannotRemoveOwnerException()
+
+        assignments = await self._user_role_repository.list_by_user_and_organization(
+            user_id, org_id
+        )
+        if not assignments:
+            raise MemberNotFoundException()
+
+        for assignment in assignments:
+            await self._user_role_repository.delete_hard(assignment)
 
     async def _slug_exists(self, slug: str) -> bool:
         existing = await self._organization_repository.get_by_slug(slug)

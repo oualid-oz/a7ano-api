@@ -17,6 +17,7 @@ from app.organizations.schemas import (
     InvitationAccept,
     InvitationCreate,
     InvitationResponse,
+    MemberRoleUpdate,
     OrganizationCreate,
     OrganizationResponse,
     OrganizationUpdate,
@@ -48,7 +49,7 @@ async def list_organizations(
     service: OrganizationService = Depends(get_organization_service),
     current_user: User = Depends(get_current_active_user),
 ) -> dict[str, Any]:
-    items, meta = await service.list_organizations(pagination)
+    items, meta = await service.list_organizations(pagination, current_user)
     return success_response(
         data=[OrganizationResponse.model_validate(o) for o in items],
         meta={"pagination": meta.model_dump()},
@@ -150,6 +151,34 @@ async def list_members(
 ) -> dict[str, Any]:
     members = await service.list_members(org_id)
     return success_response(data=members)
+
+
+@router.patch("/{org_id}/members/{user_id}/role")
+async def update_member_role(
+    org_id: UUID,
+    user_id: UUID,
+    data: MemberRoleUpdate,
+    current_user: User = Depends(get_current_active_user),
+    _: User = Depends(require_organization_permission("user:manage")),
+    service: OrganizationService = Depends(get_organization_service),
+) -> dict[str, Any]:
+    member = await service.update_member_role(org_id, user_id, data.role_id, current_user)
+    return success_response(
+        data=member,
+        message="Member role updated successfully.",
+    )
+
+
+@router.delete("/{org_id}/members/{user_id}")
+async def remove_member(
+    org_id: UUID,
+    user_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    _: User = Depends(require_organization_permission("user:manage")),
+    service: OrganizationService = Depends(get_organization_service),
+) -> dict[str, Any]:
+    await service.remove_member(org_id, user_id, current_user)
+    return success_response(message="Member removed successfully.")
 
 
 @router.get("/{org_id}/invitations")

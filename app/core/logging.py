@@ -3,6 +3,8 @@ import logging
 import sys
 from datetime import UTC, datetime
 from logging.config import dictConfig
+from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -68,6 +70,17 @@ class StandardFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         record.request_id = getattr(record, "request_id", None)
         record.ip_address = getattr(record, "ip_address", None)
+
+        method = getattr(record, "method", None)
+        path = getattr(record, "path", None)
+        status_code = getattr(record, "status_code", None)
+        duration_ms = getattr(record, "duration_ms", None)
+
+        if method and path and status_code is not None:
+            dur = f" ({duration_ms:.0f}ms)" if duration_ms is not None else ""
+            record.msg = f"{method} {path} → {status_code}{dur}"
+            record.args = ()
+
         return super().format(record)
 
 
@@ -78,6 +91,26 @@ class ContextFilter(logging.Filter):
         if not hasattr(record, "ip_address"):
             record.ip_address = None
         return True
+
+
+def _build_file_handler() -> TimedRotatingFileHandler:
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    today = datetime.now(UTC).strftime("%Y%m%d")
+    log_path = log_dir / f"log-{today}.log"
+    handler = TimedRotatingFileHandler(
+        filename=str(log_path),
+        when="midnight",
+        interval=1,
+        backupCount=30,
+        utc=True,
+        encoding="utf-8",
+    )
+    handler.suffix = "log-%Y%m%d.log"
+    handler.namer = lambda name: name
+    handler.setFormatter(JsonFormatter())
+    handler.addFilter(ContextFilter())
+    return handler
 
 
 def configure_logging() -> None:
@@ -112,11 +145,29 @@ def configure_logging() -> None:
                 "handlers": ["console"],
             },
             "loggers": {
-                "uvicorn": {"level": "INFO"},
+                "uvicorn": {"level": "WARNING"},
+                "uvicorn.access": {"level": "CRITICAL", "propagate": False},
+                "uvicorn.error": {"level": "WARNING"},
+                "sqlalchemy": {"level": "WARNING"},
                 "sqlalchemy.engine": {"level": "WARNING"},
+                "sqlalchemy.engine.Engine": {"level": "CRITICAL", "propagate": False},
+                "sqlalchemy.dialects": {"level": "WARNING"},
+                "sqlalchemy.pool": {"level": "WARNING"},
+                "app.audit.service": {"level": "INFO"},
+                "app.memos.service": {"level": "INFO"},
+                "app.notifications.service": {"level": "INFO"},
+                "app.permissions.service": {"level": "INFO"},
+                "app.projects.service": {"level": "INFO"},
+                "app.scheduling.service": {"level": "INFO"},
+                "app.tasks.service": {"level": "INFO"},
+                "app.teams.service": {"level": "INFO"},
+                "app.users.service": {"level": "INFO"},
+                "app.vault.service": {"level": "INFO"},
             },
         }
     )
+
+    logging.getLogger().addHandler(_build_file_handler())
 
 
 def get_logger(name: str) -> logging.Logger:

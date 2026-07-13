@@ -49,6 +49,10 @@ class VerifyEmailRequest(BaseModel):
     token: str
 
 
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class SessionResponse(BaseModel):
     id: UUID
     user_agent: str | None

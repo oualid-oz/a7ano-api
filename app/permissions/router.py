@@ -120,6 +120,26 @@ async def remove_role(
     return success_response(message="Role removed successfully.")
 
 
+@router.delete("/permissions/{permission_id}")
+async def delete_permission(
+    permission_id: UUID,
+    service: PermissionService = Depends(get_permission_service),
+    _: User = Depends(require_permission("role:manage")),
+) -> dict[str, Any]:
+    await service.delete(permission_id)
+    return success_response(message="Permission deleted successfully.")
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role(
+    role_id: UUID,
+    service: RoleService = Depends(get_role_service),
+    _: User = Depends(require_permission("role:manage")),
+) -> dict[str, Any]:
+    await service.delete(role_id)
+    return success_response(message="Role deleted successfully.")
+
+
 @router.get("/users/me/permissions")
 async def list_my_permissions(
     current_user: User = Depends(get_current_active_user),

@@ -12,6 +12,10 @@ services:
       VAULT_MASTER_KEY: ${VAULT_MASTER_KEY:-change-vault-key-32-chars-xxxxx}
       ENVIRONMENT: development
       LOG_LEVEL: INFO
+      MAIL_PROVIDER: mailpit
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1026
+      MAIL_FROM: noreply@localhost
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,6 +55,16 @@ services:
       retries: 5
     restart: unless-stopped
 
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1026:1026"
+      - "8025:8025"
+    volumes:
+      - mailpit_data:/data
+    restart: unless-stopped
+
 volumes:
+  mailpit_data:
   postgres_data:
   redis_data:

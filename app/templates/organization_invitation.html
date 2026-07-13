@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Invitation to join {{ organization_name }}{% endblock %}
+
+{% block content %}
+<p class="lead">Hi,</p>
+<p>
+  {{ inviter_name }} has invited you to join
+  <strong>{{ organization_name }}</strong> as a {{ role_name }}.
+</p>
+<p>Click the button below to accept the invitation:</p>
+<div class="btn-wrap">
+  <a href="{{ link }}" class="btn">Accept Invitation</a>
+</div>
+<hr class="divider" />
+<p class="fallback">
+  If the button above doesn't work, copy and paste this URL into your browser:
+  <br />
+  <a href="{{ link }}">{{ link }}</a>
+</p>
+<p class="fallback">This invitation expires in 7 days.</p>
+{% endblock %}

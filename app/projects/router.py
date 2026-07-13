@@ -13,6 +13,7 @@ from app.projects.dependencies import (
     get_project_tag_service,
     require_organization_project_permission,
     require_project_permission,
+    require_project_tag_permission,
 )
 from app.projects.models import Project
 from app.projects.schemas import (
@@ -22,6 +23,7 @@ from app.projects.schemas import (
     ProjectResponse,
     ProjectTagCreate,
     ProjectTagResponse,
+    ProjectTagUpdate,
     ProjectUpdate,
 )
 from app.projects.service import ProjectService, ProjectTagService
@@ -31,6 +33,7 @@ router = APIRouter(tags=["projects"])
 
 
 # ── Tags ──────────────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/organizations/{org_id}/projects/tags",
@@ -70,7 +73,23 @@ async def delete_project_tag(
     return success_response(message="Tag deleted successfully.")
 
 
+@router.patch("/projects/tags/{tag_id}")
+async def update_project_tag(
+    tag_id: UUID,
+    data: ProjectTagUpdate,
+    current_user: User = Depends(get_current_active_user),
+    _: User = Depends(require_project_tag_permission("project:update")),
+    service: ProjectTagService = Depends(get_project_tag_service),
+) -> dict[str, Any]:
+    tag = await service.update(tag_id, data, current_user)
+    return success_response(
+        data=ProjectTagResponse.model_validate(tag),
+        message="Tag updated successfully.",
+    )
+
+
 # ── Projects ──────────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/organizations/{org_id}/projects",
@@ -180,6 +199,7 @@ async def restore_project(
 
 
 # ── Assignees ─────────────────────────────────────────────────────────────────
+
 
 @router.post("/projects/{project_id}/assignees")
 async def add_assignee(

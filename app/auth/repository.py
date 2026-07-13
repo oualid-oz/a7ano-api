@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import RefreshSession
@@ -39,14 +39,22 @@ class RefreshSessionRepository(BaseRepository[RefreshSession]):
         await self._session.execute(stmt)
         await self._session.flush()
 
-    async def list_by_user(self, user_id: UUID) -> list[RefreshSession]:
+    async def list_by_user(
+        self, user_id: UUID, page: int = 1, page_size: int = 10
+    ) -> tuple[list[RefreshSession], int]:
+        base_where = (
+            RefreshSession.user_id == user_id,
+            RefreshSession.deleted_at.is_(None),
+        )
+        count_stmt = select(func.count()).select_from(RefreshSession).where(*base_where)
+        total: int = (await self._session.execute(count_stmt)).scalar_one()
+
         stmt = (
             select(RefreshSession)
-            .where(
-                RefreshSession.user_id == user_id,
-                RefreshSession.deleted_at.is_(None),
-            )
+            .where(*base_where)
             .order_by(RefreshSession.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
         result = await self._session.execute(stmt)
-        return list(result.scalars().all())
+        return list(result.scalars().all()), total

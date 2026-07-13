@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_active_user
 from app.core.database import get_db
+from app.notifications.dependencies import get_notification_service
+from app.notifications.service import NotificationService
 from app.organizations.repository import OrganizationRepository
 from app.users.models import User
 from app.vault.exceptions import VaultAccessDeniedException, VaultEntryNotFoundException
@@ -76,9 +78,16 @@ def get_vault_service(
     share_repo: VaultShareRepository = Depends(get_vault_share_repository),
     access_log_repo: VaultAccessLogRepository = Depends(get_vault_access_log_repository),
     org_repo: OrganizationRepository = Depends(get_organization_repository),
+    notification_service: NotificationService = Depends(get_notification_service),
 ) -> VaultService:
     return VaultService(
-        entry_repo, category_repo, tag_repo, share_repo, access_log_repo, org_repo
+        entry_repo,
+        category_repo,
+        tag_repo,
+        share_repo,
+        access_log_repo,
+        org_repo,
+        notification_service,
     )
 
 

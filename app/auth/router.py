@@ -1,6 +1,7 @@
+import math
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.auth.dependencies import (
     get_auth_service,
@@ -16,6 +17,7 @@ from app.auth.schemas import (
     LogoutRequest,
     RefreshRequest,
     RegisterRequest,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     SessionResponse,
     TokenResponse,
@@ -30,7 +32,9 @@ from app.users.schemas import UserResponse
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", response_model=SuccessResponse[UserResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=SuccessResponse[UserResponse], status_code=status.HTTP_201_CREATED
+)
 async def register(
     data: RegisterRequest,
     device_info: DeviceInfo = Depends(get_device_info),
@@ -116,6 +120,17 @@ async def verify_email(
     )
 
 
+@router.post("/resend-verification")
+async def resend_verification(
+    data: ResendVerificationRequest,
+    service: AuthService = Depends(get_auth_service),
+) -> dict[str, Any]:
+    await service.resend_verification(str(data.email))
+    return success_response(
+        message="If your email is registered and unverified, a new verification link has been sent."
+    )
+
+
 @router.post("/revoke-sessions")
 async def revoke_sessions(
     current_user: User = Depends(get_current_active_user),
@@ -125,10 +140,22 @@ async def revoke_sessions(
     return success_response(message="All sessions revoked successfully.")
 
 
-@router.get("/sessions", response_model=list[SessionResponse])
+@router.get("/sessions")
 async def list_sessions(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
     service: AuthService = Depends(get_auth_service),
 ) -> dict[str, Any]:
-    sessions = await service.get_user_sessions(current_user.id)
-    return success_response(data=[SessionResponse.model_validate(s) for s in sessions])
+    sessions, total = await service.get_user_sessions(current_user.id, page, page_size)
+    return success_response(
+        data=[SessionResponse.model_validate(s) for s in sessions],
+        meta={
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+                "pages": max(1, math.ceil(total / page_size)),
+            }
+        },
+    )

@@ -2,6 +2,7 @@ from uuid import UUID
 
 from app.common.schemas import PaginationMeta, PaginationParams
 from app.core.exceptions import DuplicateValueException
+from app.core.logging import get_logger
 from app.memos.exceptions import (
     MemoFolderNotFoundException,
     MemoNotFoundException,
@@ -17,6 +18,8 @@ from app.memos.repository import (
 from app.memos.schemas import MemoCreate, MemoFolderCreate, MemoTagCreate, MemoUpdate
 from app.organizations.repository import OrganizationRepository
 from app.users.models import User
+
+logger = get_logger(__name__)
 
 
 class MemoFolderService:
@@ -34,6 +37,14 @@ class MemoFolderService:
         data: MemoFolderCreate,
         current_user: User,
     ) -> MemoFolder:
+        logger.info(
+            "Creating memo folder",
+            extra={
+                "org_id": str(organization_id),
+                "folder_name": data.name,
+                "user_id": str(current_user.id),
+            },
+        )
         organization = await self._organization_repository.get_active_by_id(organization_id)
         if organization is None:
             from app.organizations.exceptions import OrganizationNotFoundException
@@ -46,20 +57,36 @@ class MemoFolderService:
             name=data.name,
             parent_id=data.parent_id,
         )
-        return await self._folder_repository.create(folder)
+        folder = await self._folder_repository.create(folder)
+        logger.info(
+            "Memo folder created", extra={"folder_id": str(folder.id), "folder_name": folder.name}
+        )
+        return folder
 
-    async def list_folders(
-        self, organization_id: UUID, owner_id: UUID
-    ) -> list[MemoFolder]:
-        return await self._folder_repository.list_by_organization_and_owner(
+    async def list_folders(self, organization_id: UUID, owner_id: UUID) -> list[MemoFolder]:
+        logger.info(
+            "Listing memo folders",
+            extra={"org_id": str(organization_id), "owner_id": str(owner_id)},
+        )
+        folders = await self._folder_repository.list_by_organization_and_owner(
             organization_id, owner_id
         )
+        logger.info(
+            "Memo folders listed", extra={"org_id": str(organization_id), "count": len(folders)}
+        )
+        return folders
 
     async def delete(self, folder_id: UUID, current_user: User) -> None:
+        logger.info(
+            "Deleting memo folder",
+            extra={"folder_id": str(folder_id), "user_id": str(current_user.id)},
+        )
         folder = await self._folder_repository.get(folder_id)
         if folder is None or folder.deleted_at is not None:
+            logger.warning("Delete folder failed: not found", extra={"folder_id": str(folder_id)})
             raise MemoFolderNotFoundException()
         await self._folder_repository.delete_soft(folder)
+        logger.info("Memo folder deleted", extra={"folder_id": str(folder_id)})
 
 
 class MemoTagService:
@@ -77,6 +104,9 @@ class MemoTagService:
         data: MemoTagCreate,
         current_user: User,
     ) -> MemoTag:
+        logger.info(
+            "Creating memo tag", extra={"org_id": str(organization_id), "tag_name": data.name}
+        )
         organization = await self._organization_repository.get_active_by_id(organization_id)
         if organization is None:
             from app.organizations.exceptions import OrganizationNotFoundException
@@ -94,16 +124,26 @@ class MemoTagService:
             name=data.name,
             color=data.color,
         )
-        return await self._tag_repository.create(tag)
+        tag = await self._tag_repository.create(tag)
+        logger.info("Memo tag created", extra={"tag_id": str(tag.id), "tag_name": tag.name})
+        return tag
 
     async def list_tags(self, organization_id: UUID) -> list[MemoTag]:
-        return await self._tag_repository.list_by_organization(organization_id)
+        logger.info("Listing memo tags", extra={"org_id": str(organization_id)})
+        tags = await self._tag_repository.list_by_organization(organization_id)
+        logger.info("Memo tags listed", extra={"org_id": str(organization_id), "count": len(tags)})
+        return tags
 
     async def delete(self, tag_id: UUID, current_user: User) -> None:
+        logger.info(
+            "Deleting memo tag", extra={"tag_id": str(tag_id), "user_id": str(current_user.id)}
+        )
         tag = await self._tag_repository.get(tag_id)
         if tag is None or tag.deleted_at is not None:
+            logger.warning("Delete memo tag failed: not found", extra={"tag_id": str(tag_id)})
             raise MemoTagNotFoundException()
         await self._tag_repository.delete_soft(tag)
+        logger.info("Memo tag deleted", extra={"tag_id": str(tag_id)})
 
 
 class MemoService:
@@ -127,6 +167,14 @@ class MemoService:
         data: MemoCreate,
         current_user: User,
     ) -> Memo:
+        logger.info(
+            "Creating memo",
+            extra={
+                "org_id": str(organization_id),
+                "title": data.title,
+                "user_id": str(current_user.id),
+            },
+        )
         organization = await self._organization_repository.get_active_by_id(organization_id)
         if organization is None:
             from app.organizations.exceptions import OrganizationNotFoundException
@@ -135,6 +183,7 @@ class MemoService:
 
         tags: list[MemoTag] = []
         if data.tag_ids:
+            logger.info("Resolving tag_ids", extra={"tag_ids": [str(t) for t in data.tag_ids]})
             tags = await self._tag_repository.get_many_by_ids(data.tag_ids)
 
         memo = Memo(
@@ -150,6 +199,7 @@ class MemoService:
             tags=tags,
         )
         memo = await self._memo_repository.create(memo)
+        logger.info("Memo row created, writing initial version", extra={"memo_id": str(memo.id)})
 
         version = MemoVersion(
             memo_id=memo.id,
@@ -159,12 +209,17 @@ class MemoService:
         )
         await self._version_repository.create(version)
 
-        return await self._memo_repository.get_active_by_id(memo.id) or memo
+        result = await self._memo_repository.get_active_by_id(memo.id) or memo
+        logger.info("Memo created", extra={"memo_id": str(result.id), "title": result.title})
+        return result
 
     async def get(self, memo_id: UUID) -> Memo:
+        logger.info("Fetching memo", extra={"memo_id": str(memo_id)})
         memo = await self._memo_repository.get_active_by_id(memo_id)
         if memo is None:
+            logger.warning("Memo not found", extra={"memo_id": str(memo_id)})
             raise MemoNotFoundException()
+        logger.info("Memo fetched", extra={"memo_id": str(memo.id), "title": memo.title})
         return memo
 
     async def update(
@@ -173,21 +228,29 @@ class MemoService:
         data: MemoUpdate,
         current_user: User,
     ) -> Memo:
+        logger.info(
+            "Updating memo", extra={"memo_id": str(memo_id), "user_id": str(current_user.id)}
+        )
         memo = await self.get(memo_id)
         update_data = data.model_dump(exclude_unset=True)
 
         if "tag_ids" in update_data:
             tag_ids = update_data.pop("tag_ids")
+            logger.info(
+                "Resolving updated tag_ids",
+                extra={"memo_id": str(memo_id), "tag_ids": [str(t) for t in tag_ids]},
+            )
             memo.tags = await self._tag_repository.get_many_by_ids(tag_ids)
 
-        content_changed = (
-            "content" in update_data and update_data["content"] != memo.content
-        )
+        content_changed = "content" in update_data and update_data["content"] != memo.content
 
         update_data["updated_by"] = current_user.id
         updated_memo = await self._memo_repository.update(memo, update_data)
 
         if content_changed:
+            logger.info(
+                "Content changed, creating new version", extra={"memo_id": str(updated_memo.id)}
+            )
             existing_versions = await self._version_repository.list_by_memo(updated_memo.id)
             next_version = len(existing_versions) + 1
             version = MemoVersion(
@@ -197,13 +260,22 @@ class MemoService:
                 created_by=current_user.id,
             )
             await self._version_repository.create(version)
+            logger.info(
+                "Version created", extra={"memo_id": str(updated_memo.id), "version": next_version}
+            )
 
-        return await self._memo_repository.get_active_by_id(updated_memo.id) or updated_memo
+        result = await self._memo_repository.get_active_by_id(updated_memo.id) or updated_memo
+        logger.info("Memo updated", extra={"memo_id": str(result.id)})
+        return result
 
     async def delete(self, memo_id: UUID, current_user: User) -> None:
+        logger.info(
+            "Deleting memo", extra={"memo_id": str(memo_id), "user_id": str(current_user.id)}
+        )
         memo = await self.get(memo_id)
         memo.updated_by = current_user.id
         await self._memo_repository.delete_soft(memo)
+        logger.info("Memo deleted", extra={"memo_id": str(memo_id)})
 
     async def list_memos(
         self,
@@ -215,7 +287,11 @@ class MemoService:
         is_favorite: bool | None = None,
         search: str | None = None,
     ) -> tuple[list[Memo], PaginationMeta]:
-        return await self._memo_repository.list_by_organization(
+        logger.info(
+            "Listing memos",
+            extra={"org_id": str(organization_id), "page": pagination.page, "search": search},
+        )
+        memos, meta = await self._memo_repository.list_by_organization(
             organization_id=organization_id,
             pagination=pagination,
             owner_id=owner_id,
@@ -224,31 +300,50 @@ class MemoService:
             is_favorite=is_favorite,
             search=search,
         )
+        logger.info(
+            "Memos list response", extra={"org_id": str(organization_id), "total": meta.total}
+        )
+        return memos, meta
 
     async def pin(self, memo_id: UUID, current_user: User) -> Memo:
+        logger.info(
+            "Pinning memo", extra={"memo_id": str(memo_id), "user_id": str(current_user.id)}
+        )
         memo = await self.get(memo_id)
         return await self._memo_repository.update(
             memo, {"is_pinned": True, "updated_by": current_user.id}
         )
 
     async def unpin(self, memo_id: UUID, current_user: User) -> Memo:
+        logger.info(
+            "Unpinning memo", extra={"memo_id": str(memo_id), "user_id": str(current_user.id)}
+        )
         memo = await self.get(memo_id)
         return await self._memo_repository.update(
             memo, {"is_pinned": False, "updated_by": current_user.id}
         )
 
     async def favorite(self, memo_id: UUID, current_user: User) -> Memo:
+        logger.info(
+            "Favoriting memo", extra={"memo_id": str(memo_id), "user_id": str(current_user.id)}
+        )
         memo = await self.get(memo_id)
         return await self._memo_repository.update(
             memo, {"is_favorite": True, "updated_by": current_user.id}
         )
 
     async def unfavorite(self, memo_id: UUID, current_user: User) -> Memo:
+        logger.info(
+            "Unfavoriting memo", extra={"memo_id": str(memo_id), "user_id": str(current_user.id)}
+        )
         memo = await self.get(memo_id)
         return await self._memo_repository.update(
             memo, {"is_favorite": False, "updated_by": current_user.id}
         )
 
     async def list_versions(self, memo_id: UUID) -> list[MemoVersion]:
+        logger.info("Listing memo versions", extra={"memo_id": str(memo_id)})
         memo = await self.get(memo_id)
-        return await self._version_repository.list_by_memo(memo.id)
+        versions = await self._version_repository.list_by_memo(memo.id)
+        logger.info("Memo versions listed", extra={"memo_id": str(memo_id), "count": len(versions)})
+        return versions

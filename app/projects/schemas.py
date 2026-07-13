@@ -24,6 +24,11 @@ class ProjectTagResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProjectTagUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=64)
+    color: str | None = Field(None, max_length=16)
+
+
 class ProjectCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: str | None = Field(None, max_length=10000)

@@ -65,3 +65,7 @@ class MemberResponse(BaseModel):
     role_name: str
 
     model_config = {"from_attributes": True}
+
+
+class MemberRoleUpdate(BaseModel):
+    role_id: UUID

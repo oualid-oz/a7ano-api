@@ -10,7 +10,7 @@ from app.core.exceptions import AuthorizationException
 from app.organizations.repository import OrganizationRepository
 from app.permissions.dependencies import get_authorization_service
 from app.permissions.service import AuthorizationService
-from app.projects.exceptions import ProjectNotFoundException
+from app.projects.exceptions import ProjectNotFoundException, ProjectTagNotFoundException
 from app.projects.models import Project
 from app.projects.repository import (
     ProjectAssignmentRepository,
@@ -51,9 +51,7 @@ def get_project_tag_service(
 def get_project_service(
     project_repository: ProjectRepository = Depends(get_project_repository),
     tag_repository: ProjectTagRepository = Depends(get_project_tag_repository),
-    assignment_repository: ProjectAssignmentRepository = Depends(
-        get_project_assignment_repository
-    ),
+    assignment_repository: ProjectAssignmentRepository = Depends(get_project_assignment_repository),
     organization_repository: OrganizationRepository = Depends(get_organization_repository),
     user_repository: UserRepository = Depends(get_user_repository),
 ) -> ProjectService:
@@ -90,6 +88,27 @@ def require_project_permission(permission: str) -> Any:
             current_user.id,
             permission,
             organization_id=project.organization_id,
+        ):
+            raise AuthorizationException()
+        return current_user
+
+    return _check_permission
+
+
+def require_project_tag_permission(permission: str) -> Any:
+    async def _check_permission(
+        tag_id: UUID,
+        current_user: User = Depends(get_current_active_user),
+        auth_service: AuthorizationService = Depends(get_authorization_service),
+        tag_repository: ProjectTagRepository = Depends(get_project_tag_repository),
+    ) -> User:
+        tag = await tag_repository.get(tag_id)
+        if tag is None or tag.deleted_at is not None:
+            raise ProjectTagNotFoundException()
+        if not await auth_service.has_permission(
+            current_user.id,
+            permission,
+            organization_id=tag.organization_id,
         ):
             raise AuthorizationException()
         return current_user

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.common.repository import BaseRepository
+from app.common.schemas import PaginationMeta, PaginationParams
 from app.teams.models import Team
 
 
@@ -21,10 +22,12 @@ class TeamRepository(BaseRepository[Team]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_by_organization(self, organization_id: UUID) -> list[Team]:
-        stmt = select(Team).where(
-            Team.organization_id == organization_id,
-            Team.deleted_at.is_(None),
+    async def list_by_organization(
+        self, organization_id: UUID, pagination: PaginationParams
+    ) -> tuple[list[Team], PaginationMeta]:
+        return await self.list(
+            pagination=pagination,
+            filters={"organization_id": organization_id},
+            sort_field="created_at",
+            sort_desc=True,
         )
-        result = await self._session.execute(stmt)
-        return list(result.scalars().all())

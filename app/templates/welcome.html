@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to {{ app_name }}{% endblock %}
+
+{% block content %}
+<p class="lead">Welcome, {{ full_name }}!</p>
+<p>
+  Your email has been verified and your account is now active.
+  You can now sign in and start using {{ app_name }}.
+</p>
+<div class="btn-wrap">
+  <a href="{{ app_url }}" class="btn">Go to Dashboard</a>
+</div>
+<p>
+  If you have any questions, feel free to reach out to our support team.
+</p>
+{% endblock %}

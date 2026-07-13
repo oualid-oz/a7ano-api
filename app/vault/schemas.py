@@ -3,9 +3,17 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.users.schemas import UserResponse
+
 
 class VaultCategoryCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=64)
+    description: str | None = Field(None, max_length=255)
+    icon: str | None = Field(None, max_length=64)
+
+
+class VaultCategoryUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=64)
     description: str | None = Field(None, max_length=255)
     icon: str | None = Field(None, max_length=64)
 
@@ -23,6 +31,11 @@ class VaultCategoryResponse(BaseModel):
 
 class VaultTagCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=64)
+    color: str | None = Field(None, max_length=16)
+
+
+class VaultTagUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=64)
     color: str | None = Field(None, max_length=16)
 
 
@@ -67,6 +80,7 @@ class VaultEntryResponse(BaseModel):
     organization_id: UUID | None
     owner_id: UUID
     category_id: UUID | None
+    category: VaultCategoryResponse | None
     entry_type: str
     title: str
     username: str | None
@@ -88,6 +102,7 @@ class VaultEntrySummaryResponse(BaseModel):
     organization_id: UUID | None
     owner_id: UUID
     category_id: UUID | None
+    category: VaultCategoryResponse | None
     entry_type: str
     title: str
     username: str | None
@@ -98,6 +113,17 @@ class VaultEntrySummaryResponse(BaseModel):
     tags: list[VaultTagResponse]
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class VaultEntryFilters(BaseModel):
+    org_id: UUID | None = Field(
+        None, description="Filter by organization (leave empty to show all)"
+    )
+    entry_type: str | None = Field(None, description="Filter by type: password, note, card, etc.")
+    category_id: UUID | None = Field(None, description="Filter by category")
+    search: str | None = Field(None, description="Search by title")
 
     model_config = {"from_attributes": True}
 
@@ -114,6 +140,7 @@ class VaultShareResponse(BaseModel):
     entry_id: UUID
     shared_with_user_id: UUID | None
     shared_with_team_id: UUID | None
+    shared_with_user: UserResponse | None
     permission: str
     expires_at: datetime | None
     created_at: datetime
@@ -125,6 +152,7 @@ class VaultAccessLogResponse(BaseModel):
     id: UUID
     entry_id: UUID
     user_id: UUID
+    user: UserResponse | None
     action: str
     ip_address: str | None
     created_at: datetime

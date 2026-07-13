@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.auth.dependencies import get_current_active_user
 from app.common.dependencies import get_pagination
@@ -18,7 +18,9 @@ from app.vault.schemas import (
     VaultAccessLogResponse,
     VaultCategoryCreate,
     VaultCategoryResponse,
+    VaultCategoryUpdate,
     VaultEntryCreate,
+    VaultEntryFilters,
     VaultEntryResponse,
     VaultEntrySummaryResponse,
     VaultEntryUpdate,
@@ -26,6 +28,7 @@ from app.vault.schemas import (
     VaultShareResponse,
     VaultTagCreate,
     VaultTagResponse,
+    VaultTagUpdate,
 )
 from app.vault.service import VaultCategoryService, VaultService, VaultTagService
 
@@ -66,6 +69,35 @@ async def list_vault_categories(
     )
 
 
+@router.patch("/organizations/{org_id}/vault/categories/{category_id}")
+async def update_vault_category(
+    org_id: UUID,
+    category_id: UUID,
+    data: VaultCategoryUpdate,
+    current_user: User = Depends(get_current_active_user),
+    service: VaultCategoryService = Depends(get_vault_category_service),
+) -> dict[str, Any]:
+    category = await service.update(category_id, org_id, data, current_user)
+    return success_response(
+        data=VaultCategoryResponse.model_validate(category),
+        message="Vault category updated successfully.",
+    )
+
+
+@router.delete(
+    "/organizations/{org_id}/vault/categories/{category_id}",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_vault_category(
+    org_id: UUID,
+    category_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    service: VaultCategoryService = Depends(get_vault_category_service),
+) -> dict[str, Any]:
+    await service.delete(category_id, org_id, current_user)
+    return success_response(message="Vault category deleted successfully.")
+
+
 # ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------
@@ -98,6 +130,35 @@ async def list_vault_tags(
     return success_response(data=[VaultTagResponse.model_validate(t) for t in tags])
 
 
+@router.patch("/organizations/{org_id}/vault/tags/{tag_id}")
+async def update_vault_tag(
+    org_id: UUID,
+    tag_id: UUID,
+    data: VaultTagUpdate,
+    current_user: User = Depends(get_current_active_user),
+    service: VaultTagService = Depends(get_vault_tag_service),
+) -> dict[str, Any]:
+    tag = await service.update(tag_id, org_id, data, current_user)
+    return success_response(
+        data=VaultTagResponse.model_validate(tag),
+        message="Vault tag updated successfully.",
+    )
+
+
+@router.delete(
+    "/organizations/{org_id}/vault/tags/{tag_id}",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_vault_tag(
+    org_id: UUID,
+    tag_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    service: VaultTagService = Depends(get_vault_tag_service),
+) -> dict[str, Any]:
+    await service.delete(tag_id, org_id, current_user)
+    return success_response(message="Vault tag deleted successfully.")
+
+
 # ---------------------------------------------------------------------------
 # Entries
 # ---------------------------------------------------------------------------
@@ -126,21 +187,18 @@ async def create_vault_entry(
 
 @router.get("/vault")
 async def list_vault_entries(
-    org_id: UUID | None = Query(None),
-    entry_type: str | None = Query(None),
-    category_id: UUID | None = Query(None),
-    search: str | None = Query(None),
+    filters: VaultEntryFilters = Depends(),
     pagination: PaginationParams = Depends(get_pagination),
     current_user: User = Depends(get_current_active_user),
     service: VaultService = Depends(get_vault_service),
 ) -> dict[str, Any]:
     entries, meta = await service.list_entries(
-        owner_id=current_user.id,
+        current_user=current_user,
         pagination=pagination,
-        organization_id=org_id,
-        entry_type=entry_type,
-        category_id=category_id,
-        search=search,
+        organization_id=filters.org_id,
+        entry_type=filters.entry_type,
+        category_id=filters.category_id,
+        search=filters.search,
     )
     summaries = [
         VaultEntrySummaryResponse(
@@ -148,6 +206,7 @@ async def list_vault_entries(
             organization_id=e.organization_id,
             owner_id=e.owner_id,
             category_id=e.category_id,
+            category=e.category,
             entry_type=e.entry_type,
             title=e.title,
             username=None,

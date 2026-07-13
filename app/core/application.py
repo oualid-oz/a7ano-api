@@ -12,12 +12,15 @@ from app.core.logging import configure_logging
 from app.core.middleware import register_middleware
 from app.core.redis import RedisManager
 from app.core.router import router
+from app.dms.router import router as dms_router
 from app.memos.router import router as memos_router
 from app.notifications.router import router as notifications_router
 from app.organizations.router import router as organizations_router
 from app.permissions.router import router as permissions_router
 from app.permissions.service import seed_permissions_and_roles
 from app.projects.router import router as projects_router
+from app.scheduling.router import router as scheduling_router
+from app.tasks.router import router as tasks_router
 from app.teams.router import router as teams_router
 from app.users.router import router as users_router
 from app.vault.router import router as vault_router
@@ -53,8 +56,11 @@ def create_app() -> FastAPI:
     app.include_router(organizations_router, prefix=settings.api_prefix)
     app.include_router(teams_router, prefix=settings.api_prefix)
     app.include_router(projects_router, prefix=settings.api_prefix)
+    app.include_router(scheduling_router, prefix=settings.api_prefix)
+    app.include_router(tasks_router, prefix=settings.api_prefix)
     app.include_router(memos_router, prefix=settings.api_prefix)
     app.include_router(vault_router, prefix=settings.api_prefix)
     app.include_router(audit_router, prefix=settings.api_prefix)
     app.include_router(notifications_router, prefix=settings.api_prefix)
+    app.include_router(dms_router, prefix=settings.api_prefix)
     return app
