@@ -25,5 +25,8 @@ class RedisManager:
     @classmethod
     def get(cls) -> redis.Redis:
         if cls._pool is None:
-            raise RuntimeError("Redis connection has not been initialized.")
+            cls._pool = cast(
+                redis.Redis,
+                redis.from_url(settings.redis_url, decode_responses=True),  # type: ignore[no-untyped-call]
+            )
         return cls._pool

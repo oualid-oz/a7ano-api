@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 
@@ -28,10 +28,12 @@ from app.vault.router import router as vault_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-    await RedisManager.connect()
-    async with async_session_maker() as session:
-        await seed_permissions_and_roles(session)
-        await session.commit()
+    with suppress(Exception):
+        await RedisManager.connect()
+    with suppress(Exception):
+        async with async_session_maker() as session:
+            await seed_permissions_and_roles(session)
+            await session.commit()
     yield
     await RedisManager.disconnect()
     await close_db()
