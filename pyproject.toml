@@ -128,3 +128,6 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
 ]
+
+[tool.vercel]
+entrypoint = "api/index:app"
