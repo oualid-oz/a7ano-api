@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from app.auth.exceptions import (
     AccountLockedException,
+    EmailNotVerifiedException,
     EmailVerificationTokenInvalidException,
     InvalidCredentialsException,
     InvalidOrExpiredTokenException,
@@ -23,6 +24,7 @@ from app.auth.schemas import (
     VerifyEmailRequest,
 )
 from app.core.config import settings
+from app.core.email import get_email_client
 from app.core.redis import RedisManager
 from app.core.security import (
     create_access_token,
@@ -31,6 +33,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.core.templates import render_reset_password, render_verify_email, render_welcome
 from app.users.models import User
 from app.users.repository import UserRepository
 from app.users.schemas import UserCreate
@@ -63,6 +66,9 @@ class AuthService:
         if not verify_password(data.password, user.password_hash):
             await self._handle_failed_login(user)
             raise InvalidCredentialsException()
+
+        if not user.is_verified:
+            raise EmailNotVerifiedException()
 
         user.record_successful_login()
         await self._user_repository.update(user, {})
@@ -130,6 +136,11 @@ class AuthService:
         )
         await self.revoke_all_sessions(user.id)
 
+    async def resend_verification(self, email: str) -> None:
+        user = await self._user_repository.get_by_email(email)
+        if user is not None and not user.is_verified:
+            await self._send_email_verification(user)
+
     async def forgot_password(self, email: str) -> None:
         user = await self._user_repository.get_by_email(email)
         if user is not None:
@@ -140,6 +151,7 @@ class AuthService:
                 3600,
                 str(user.id),
             )
+            await self._send_password_reset_email(user, token)
 
     async def reset_password(self, data: ResetPasswordRequest) -> User:
         redis = RedisManager.get()
@@ -180,8 +192,10 @@ class AuthService:
             await redis.delete(*keys)
             await redis.delete(f"user_sessions:{user_id}")
 
-    async def get_user_sessions(self, user_id: UUID) -> list[RefreshSession]:
-        return await self._refresh_repository.list_by_user(user_id)
+    async def get_user_sessions(
+        self, user_id: UUID, page: int = 1, page_size: int = 10
+    ) -> tuple[list[RefreshSession], int]:
+        return await self._refresh_repository.list_by_user(user_id, page, page_size)
 
     async def _create_refresh_session(
         self, user: User, device_info: DeviceInfo, remember_me: bool
@@ -273,4 +287,23 @@ class AuthService:
         token = token_urlsafe(32)
         redis = RedisManager.get()
         await redis.setex(f"email_verify:{token}", 24 * 3600, str(user.id))
+
+        link = f"{settings.app_url}/verify-email?token={token}"
+        full_name = user.full_name or user.email
+        body = render_verify_email(full_name=full_name, link=link)
+        client = get_email_client()
+        await client.send(user.email, "Verify your email", body)
         return token
+
+    async def _send_password_reset_email(self, user: User, token: str) -> None:
+        link = f"{settings.app_url}/reset-password?token={token}"
+        full_name = user.full_name or user.email
+        body = render_reset_password(full_name=full_name, link=link)
+        client = get_email_client()
+        await client.send(user.email, "Reset your password", body)
+
+    async def _send_welcome_email(self, user: User) -> None:
+        full_name = user.full_name or user.email
+        body = render_welcome(full_name=full_name)
+        client = get_email_client()
+        await client.send(user.email, f"Welcome to {settings.app_name}", body)

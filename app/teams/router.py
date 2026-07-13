@@ -8,6 +8,8 @@ from app.common.dependencies import get_pagination
 from app.common.responses import success_response
 from app.common.schemas import PaginationParams
 from app.organizations.dependencies import require_organization_permission
+from app.permissions.dependencies import get_authorization_service
+from app.permissions.service import AuthorizationService
 from app.teams.dependencies import (
     get_team,
     get_team_service,
@@ -115,6 +117,16 @@ async def remove_team_member(
 ) -> dict[str, Any]:
     await service.remove_member(team_id, data, current_user)
     return success_response(message="Member removed successfully.")
+
+
+@router.get("/teams/{team_id}/my-permissions")
+async def get_my_team_permissions(
+    team_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    auth_service: AuthorizationService = Depends(get_authorization_service),
+) -> dict[str, Any]:
+    permissions = await auth_service.get_user_permissions(current_user.id, team_id=team_id)
+    return success_response(data=sorted(permissions))
 
 
 @router.get("/teams/{team_id}/members")

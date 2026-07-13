@@ -102,12 +102,16 @@ class UserRoleRepository(BaseRepository[UserRole]):
             UserRole.user_id == user_id,
             UserRole.deleted_at.is_(None),
         )
-        if organization_id is not None:
-            stmt = stmt.where(
-                (UserRole.organization_id == organization_id) | (UserRole.organization_id.is_(None))
-            )
         if team_id is not None:
+            # Include roles scoped to this exact team OR org/global roles (team_id IS NULL)
+            # so organization_admin and super_admin inherit access downward.
             stmt = stmt.where((UserRole.team_id == team_id) | (UserRole.team_id.is_(None)))
+        elif organization_id is not None:
+            stmt = stmt.where(
+                (UserRole.organization_id == organization_id)
+                | (UserRole.organization_id.is_(None)),
+                UserRole.team_id.is_(None),
+            )
         stmt = stmt.options(selectinload(UserRole.role).selectinload(Role.permissions))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
@@ -129,6 +133,21 @@ class UserRoleRepository(BaseRepository[UserRole]):
             select(UserRole)
             .where(
                 UserRole.team_id == team_id,
+                UserRole.deleted_at.is_(None),
+            )
+            .options(selectinload(UserRole.role))
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_by_user_and_organization(
+        self, user_id: UUID, organization_id: UUID
+    ) -> list[UserRole]:
+        stmt = (
+            select(UserRole)
+            .where(
+                UserRole.user_id == user_id,
+                UserRole.organization_id == organization_id,
                 UserRole.deleted_at.is_(None),
             )
             .options(selectinload(UserRole.role))

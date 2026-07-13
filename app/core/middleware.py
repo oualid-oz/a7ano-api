@@ -23,16 +23,27 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         request.state.ip_address = self._get_client_ip(request)
         request.state.user_id = None
 
+        qs = f"?{request.url.query}" if request.url.query else ""
+        full_path = f"{request.url.path}{qs}"
+
+        logger.info(
+            f"→ {request.method} {full_path}",
+            extra={
+                "request_id": request_id,
+                "ip_address": request.state.ip_address,
+            },
+        )
+
         start_time = time.perf_counter()
         try:
             response = await call_next(request)
         except Exception:
             logger.exception(
-                "Unhandled request exception",
+                f"✗ {request.method} {full_path}",
                 extra={
                     "request_id": request_id,
                     "method": request.method,
-                    "path": request.url.path,
+                    "path": full_path,
                     "ip_address": request.state.ip_address,
                 },
             )
@@ -43,11 +54,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         response.headers["X-Response-Time-Ms"] = f"{duration_ms:.2f}"
 
         logger.info(
-            "Request completed",
+            f"← {request.method} {full_path}",
             extra={
                 "request_id": request_id,
                 "method": request.method,
-                "path": request.url.path,
+                "path": full_path,
                 "status_code": response.status_code,
                 "duration_ms": duration_ms,
                 "ip_address": request.state.ip_address,

@@ -1,13 +1,14 @@
 """initial_schema
 
 Revision ID: 2f9e2581b79c
-Revises: 
+Revises:
 Create Date: 2026-06-28 13:39:43.497776
 
 """
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -71,7 +72,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_deleted_at'), 'users', ['deleted_at'], unique=False)
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index('ix_users_email_active', 'users', ['email'], unique=True, postgresql_where=sa.text('deleted_at IS NULL'))
+    op.create_index('ix_users_email_active', 'users', ['email'], unique=True, postgresql_where=sa.text('deleted_at IS NULL'))  # noqa: E501
     op.create_table('notifications',
     sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.Column('title', sa.String(length=255), nullable=False),
@@ -88,7 +89,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_notifications_deleted_at'), 'notifications', ['deleted_at'], unique=False)
+    op.create_index(op.f('ix_notifications_deleted_at'), 'notifications', ['deleted_at'], unique=False)  # noqa: E501
     op.create_index(op.f('ix_notifications_user_id'), 'notifications', ['user_id'], unique=False)
     op.create_table('organizations',
     sa.Column('name', sa.String(length=255), nullable=False),
@@ -109,7 +110,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_organizations_deleted_at'), 'organizations', ['deleted_at'], unique=False)
+    op.create_index(op.f('ix_organizations_deleted_at'), 'organizations', ['deleted_at'], unique=False)  # noqa: E501
     op.create_index(op.f('ix_organizations_owner_id'), 'organizations', ['owner_id'], unique=False)
     op.create_index(op.f('ix_organizations_slug'), 'organizations', ['slug'], unique=True)
     op.create_table('refresh_sessions',
@@ -128,9 +129,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_refresh_sessions_deleted_at'), 'refresh_sessions', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_refresh_sessions_token_hash'), 'refresh_sessions', ['token_hash'], unique=True)
-    op.create_index(op.f('ix_refresh_sessions_user_id'), 'refresh_sessions', ['user_id'], unique=False)
+    op.create_index(op.f('ix_refresh_sessions_deleted_at'), 'refresh_sessions', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_refresh_sessions_token_hash'), 'refresh_sessions', ['token_hash'], unique=True)  # noqa: E501
+    op.create_index(op.f('ix_refresh_sessions_user_id'), 'refresh_sessions', ['user_id'], unique=False)  # noqa: E501
     op.create_table('role_permissions',
     sa.Column('role_id', sa.Uuid(), nullable=False),
     sa.Column('permission_id', sa.Uuid(), nullable=False),
@@ -152,12 +153,12 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_user_roles_deleted_at'), 'user_roles', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_user_roles_organization_id'), 'user_roles', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_user_roles_role_id'), 'user_roles', ['role_id'], unique=False)
-    op.create_index('ix_user_roles_scope', 'user_roles', ['user_id', 'role_id', 'organization_id', 'team_id'], unique=True, postgresql_where=sa.text('deleted_at IS NULL'))
-    op.create_index(op.f('ix_user_roles_team_id'), 'user_roles', ['team_id'], unique=False)
-    op.create_index(op.f('ix_user_roles_user_id'), 'user_roles', ['user_id'], unique=False)
+    op.create_index(op.f('ix_user_roles_deleted_at'), 'user_roles', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_user_roles_organization_id'), 'user_roles', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_user_roles_role_id'), 'user_roles', ['role_id'], unique=False)  # noqa: E501
+    op.create_index('ix_user_roles_scope', 'user_roles', ['user_id', 'role_id', 'organization_id', 'team_id'], unique=True, postgresql_where=sa.text('deleted_at IS NULL'))  # noqa: E501
+    op.create_index(op.f('ix_user_roles_team_id'), 'user_roles', ['team_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_user_roles_user_id'), 'user_roles', ['user_id'], unique=False)  # noqa: E501
     op.create_table('audit_events',
     sa.Column('actor_id', sa.Uuid(), nullable=True),
     sa.Column('action', sa.String(length=128), nullable=False),
@@ -178,10 +179,10 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_audit_events_action'), 'audit_events', ['action'], unique=False)
     op.create_index(op.f('ix_audit_events_actor_id'), 'audit_events', ['actor_id'], unique=False)
-    op.create_index(op.f('ix_audit_events_deleted_at'), 'audit_events', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_audit_events_organization_id'), 'audit_events', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_audit_events_resource_id'), 'audit_events', ['resource_id'], unique=False)
-    op.create_index(op.f('ix_audit_events_resource_type'), 'audit_events', ['resource_type'], unique=False)
+    op.create_index(op.f('ix_audit_events_deleted_at'), 'audit_events', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_audit_events_organization_id'), 'audit_events', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_audit_events_resource_id'), 'audit_events', ['resource_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_audit_events_resource_type'), 'audit_events', ['resource_type'], unique=False)  # noqa: E501
     op.create_table('memo_folders',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
@@ -197,8 +198,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['parent_id'], ['memo_folders.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_memo_folders_deleted_at'), 'memo_folders', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_memo_folders_organization_id'), 'memo_folders', ['organization_id'], unique=False)
+    op.create_index(op.f('ix_memo_folders_deleted_at'), 'memo_folders', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_memo_folders_organization_id'), 'memo_folders', ['organization_id'], unique=False)  # noqa: E501
     op.create_table('memo_tags',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=64), nullable=False),
@@ -211,8 +212,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_memo_tags_deleted_at'), 'memo_tags', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_memo_tags_organization_id'), 'memo_tags', ['organization_id'], unique=False)
+    op.create_index(op.f('ix_memo_tags_deleted_at'), 'memo_tags', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_memo_tags_organization_id'), 'memo_tags', ['organization_id'], unique=False)  # noqa: E501
     op.create_table('organization_invitations',
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('token', sa.String(length=128), nullable=False),
@@ -238,10 +239,10 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_organization_invitations_deleted_at'), 'organization_invitations', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_organization_invitations_email'), 'organization_invitations', ['email'], unique=False)
-    op.create_index(op.f('ix_organization_invitations_organization_id'), 'organization_invitations', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_organization_invitations_token'), 'organization_invitations', ['token'], unique=True)
+    op.create_index(op.f('ix_organization_invitations_deleted_at'), 'organization_invitations', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_organization_invitations_email'), 'organization_invitations', ['email'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_organization_invitations_organization_id'), 'organization_invitations', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_organization_invitations_token'), 'organization_invitations', ['token'], unique=True)  # noqa: E501
     op.create_table('project_tags',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=64), nullable=False),
@@ -254,8 +255,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['organization_id'], ['organizations.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_project_tags_deleted_at'), 'project_tags', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_project_tags_organization_id'), 'project_tags', ['organization_id'], unique=False)
+    op.create_index(op.f('ix_project_tags_deleted_at'), 'project_tags', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_project_tags_organization_id'), 'project_tags', ['organization_id'], unique=False)  # noqa: E501
     op.create_table('teams',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
@@ -272,8 +273,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_teams_deleted_at'), 'teams', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_teams_organization_id'), 'teams', ['organization_id'], unique=False)
+    op.create_index(op.f('ix_teams_deleted_at'), 'teams', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_teams_organization_id'), 'teams', ['organization_id'], unique=False)  # noqa: E501
     op.create_table('vault_categories',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=64), nullable=False),
@@ -291,8 +292,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_vault_categories_deleted_at'), 'vault_categories', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_vault_categories_organization_id'), 'vault_categories', ['organization_id'], unique=False)
+    op.create_index(op.f('ix_vault_categories_deleted_at'), 'vault_categories', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_categories_organization_id'), 'vault_categories', ['organization_id'], unique=False)  # noqa: E501
     op.create_table('vault_tags',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
@@ -311,9 +312,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_vault_tags_deleted_at'), 'vault_tags', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_vault_tags_organization_id'), 'vault_tags', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_vault_tags_owner_id'), 'vault_tags', ['owner_id'], unique=False)
+    op.create_index(op.f('ix_vault_tags_deleted_at'), 'vault_tags', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_tags_organization_id'), 'vault_tags', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_tags_owner_id'), 'vault_tags', ['owner_id'], unique=False)  # noqa: E501
     op.create_table('memos',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
@@ -336,10 +337,10 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_memos_deleted_at'), 'memos', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_memos_folder_id'), 'memos', ['folder_id'], unique=False)
-    op.create_index(op.f('ix_memos_organization_id'), 'memos', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_memos_owner_id'), 'memos', ['owner_id'], unique=False)
+    op.create_index(op.f('ix_memos_deleted_at'), 'memos', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_memos_folder_id'), 'memos', ['folder_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_memos_organization_id'), 'memos', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_memos_owner_id'), 'memos', ['owner_id'], unique=False)  # noqa: E501
     op.create_table('projects',
     sa.Column('organization_id', sa.Uuid(), nullable=False),
     sa.Column('team_id', sa.Uuid(), nullable=True),
@@ -364,12 +365,12 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_projects_deleted_at'), 'projects', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_projects_organization_id'), 'projects', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_projects_owner_id'), 'projects', ['owner_id'], unique=False)
-    op.create_index(op.f('ix_projects_priority'), 'projects', ['priority'], unique=False)
-    op.create_index(op.f('ix_projects_status'), 'projects', ['status'], unique=False)
-    op.create_index(op.f('ix_projects_team_id'), 'projects', ['team_id'], unique=False)
+    op.create_index(op.f('ix_projects_deleted_at'), 'projects', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_projects_organization_id'), 'projects', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_projects_owner_id'), 'projects', ['owner_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_projects_priority'), 'projects', ['priority'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_projects_status'), 'projects', ['status'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_projects_team_id'), 'projects', ['team_id'], unique=False)  # noqa: E501
     op.create_table('vault_entries',
     sa.Column('organization_id', sa.Uuid(), nullable=True),
     sa.Column('owner_id', sa.Uuid(), nullable=False),
@@ -397,10 +398,10 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['updated_by'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_vault_entries_category_id'), 'vault_entries', ['category_id'], unique=False)
-    op.create_index(op.f('ix_vault_entries_deleted_at'), 'vault_entries', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_vault_entries_organization_id'), 'vault_entries', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_vault_entries_owner_id'), 'vault_entries', ['owner_id'], unique=False)
+    op.create_index(op.f('ix_vault_entries_category_id'), 'vault_entries', ['category_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_entries_deleted_at'), 'vault_entries', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_entries_organization_id'), 'vault_entries', ['organization_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_entries_owner_id'), 'vault_entries', ['owner_id'], unique=False)  # noqa: E501
     op.create_table('memo_tag_assignments',
     sa.Column('memo_id', sa.Uuid(), nullable=False),
     sa.Column('tag_id', sa.Uuid(), nullable=False),
@@ -422,8 +423,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['memo_id'], ['memos.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_memo_versions_deleted_at'), 'memo_versions', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_memo_versions_memo_id'), 'memo_versions', ['memo_id'], unique=False)
+    op.create_index(op.f('ix_memo_versions_deleted_at'), 'memo_versions', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_memo_versions_memo_id'), 'memo_versions', ['memo_id'], unique=False)  # noqa: E501
     op.create_table('project_assignments',
     sa.Column('project_id', sa.Uuid(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
@@ -437,9 +438,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_project_assignments_deleted_at'), 'project_assignments', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_project_assignments_project_id'), 'project_assignments', ['project_id'], unique=False)
-    op.create_index(op.f('ix_project_assignments_user_id'), 'project_assignments', ['user_id'], unique=False)
+    op.create_index(op.f('ix_project_assignments_deleted_at'), 'project_assignments', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_project_assignments_project_id'), 'project_assignments', ['project_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_project_assignments_user_id'), 'project_assignments', ['user_id'], unique=False)  # noqa: E501
     op.create_table('project_tag_assignments',
     sa.Column('project_id', sa.Uuid(), nullable=False),
     sa.Column('tag_id', sa.Uuid(), nullable=False),
@@ -462,9 +463,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_vault_access_logs_deleted_at'), 'vault_access_logs', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_vault_access_logs_entry_id'), 'vault_access_logs', ['entry_id'], unique=False)
-    op.create_index(op.f('ix_vault_access_logs_user_id'), 'vault_access_logs', ['user_id'], unique=False)
+    op.create_index(op.f('ix_vault_access_logs_deleted_at'), 'vault_access_logs', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_access_logs_entry_id'), 'vault_access_logs', ['entry_id'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_access_logs_user_id'), 'vault_access_logs', ['user_id'], unique=False)  # noqa: E501
     op.create_table('vault_entry_tag_assignments',
     sa.Column('vault_entry_id', sa.Uuid(), nullable=False),
     sa.Column('tag_id', sa.Uuid(), nullable=False),
@@ -488,8 +489,8 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['shared_with_user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_vault_shares_deleted_at'), 'vault_shares', ['deleted_at'], unique=False)
-    op.create_index(op.f('ix_vault_shares_entry_id'), 'vault_shares', ['entry_id'], unique=False)
+    op.create_index(op.f('ix_vault_shares_deleted_at'), 'vault_shares', ['deleted_at'], unique=False)  # noqa: E501
+    op.create_index(op.f('ix_vault_shares_entry_id'), 'vault_shares', ['entry_id'], unique=False)  # noqa: E501
     # ### end Alembic commands ###
 
 
@@ -542,10 +543,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_project_tags_organization_id'), table_name='project_tags')
     op.drop_index(op.f('ix_project_tags_deleted_at'), table_name='project_tags')
     op.drop_table('project_tags')
-    op.drop_index(op.f('ix_organization_invitations_token'), table_name='organization_invitations')
-    op.drop_index(op.f('ix_organization_invitations_organization_id'), table_name='organization_invitations')
-    op.drop_index(op.f('ix_organization_invitations_email'), table_name='organization_invitations')
-    op.drop_index(op.f('ix_organization_invitations_deleted_at'), table_name='organization_invitations')
+    op.drop_index(op.f('ix_organization_invitations_token'), table_name='organization_invitations')  # noqa: E501
+    op.drop_index(op.f('ix_organization_invitations_organization_id'), table_name='organization_invitations')  # noqa: E501
+    op.drop_index(op.f('ix_organization_invitations_email'), table_name='organization_invitations')  # noqa: E501
+    op.drop_index(op.f('ix_organization_invitations_deleted_at'), table_name='organization_invitations')  # noqa: E501
     op.drop_table('organization_invitations')
     op.drop_index(op.f('ix_memo_tags_organization_id'), table_name='memo_tags')
     op.drop_index(op.f('ix_memo_tags_deleted_at'), table_name='memo_tags')
@@ -562,7 +563,7 @@ def downgrade() -> None:
     op.drop_table('audit_events')
     op.drop_index(op.f('ix_user_roles_user_id'), table_name='user_roles')
     op.drop_index(op.f('ix_user_roles_team_id'), table_name='user_roles')
-    op.drop_index('ix_user_roles_scope', table_name='user_roles', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_user_roles_scope', table_name='user_roles', postgresql_where=sa.text('deleted_at IS NULL'))  # noqa: E501
     op.drop_index(op.f('ix_user_roles_role_id'), table_name='user_roles')
     op.drop_index(op.f('ix_user_roles_organization_id'), table_name='user_roles')
     op.drop_index(op.f('ix_user_roles_deleted_at'), table_name='user_roles')
@@ -579,7 +580,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_notifications_user_id'), table_name='notifications')
     op.drop_index(op.f('ix_notifications_deleted_at'), table_name='notifications')
     op.drop_table('notifications')
-    op.drop_index('ix_users_email_active', table_name='users', postgresql_where=sa.text('deleted_at IS NULL'))
+    op.drop_index('ix_users_email_active', table_name='users', postgresql_where=sa.text('deleted_at IS NULL'))  # noqa: E501
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_index(op.f('ix_users_deleted_at'), table_name='users')
     op.drop_table('users')

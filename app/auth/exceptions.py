@@ -15,6 +15,14 @@ class AccountLockedException(AuthenticationException):
     message = "Account is temporarily locked due to too many failed login attempts."
 
 
+class EmailNotVerifiedException(AuthenticationException):
+    code = "EMAIL_NOT_VERIFIED"
+    message = (
+        "Please verify your email address before logging in."
+        " Check your inbox for the verification link."
+    )
+
+
 class InvalidOrExpiredTokenException(AuthenticationException):
     code = "INVALID_OR_EXPIRED_TOKEN"
     message = "Token is invalid or expired."

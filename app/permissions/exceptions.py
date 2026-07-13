@@ -23,3 +23,8 @@ class PermissionNotFoundException(ResourceNotFoundException):
 class RoleAlreadyAssignedException(ConflictException):
     code = "ROLE_ALREADY_ASSIGNED"
     message = "Role is already assigned to this user in the given scope."
+
+
+class ProtectedSystemRoleException(ConflictException):
+    code = "PROTECTED_SYSTEM_ROLE"
+    message = "System roles cannot be deleted."

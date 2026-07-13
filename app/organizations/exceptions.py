@@ -28,3 +28,18 @@ class InvitationExpiredException(BadRequestException):
 class InvitationAlreadyProcessedException(BadRequestException):
     code = "INVITATION_ALREADY_PROCESSED"
     message = "Invitation has already been accepted or revoked."
+
+
+class MemberNotFoundException(ResourceNotFoundException):
+    code = "MEMBER_NOT_FOUND"
+    message = "Member not found in this organization."
+
+
+class CannotRemoveOwnerException(BadRequestException):
+    code = "CANNOT_REMOVE_OWNER"
+    message = "The organization owner cannot be removed."
+
+
+class CannotChangeOwnerRoleException(BadRequestException):
+    code = "CANNOT_CHANGE_OWNER_ROLE"
+    message = "The organization owner's role cannot be changed."
